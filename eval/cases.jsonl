@@ -1,0 +1,20 @@
+{"input": "看看当前目录下有哪些文件", "expect_tool": "bash", "expect_kw": "main.py"}
+{"input": "新建一个 test_eval.txt，内容写 hello", "expect_tool": "write_file", "expect_kw": "test_eval"}
+{"input": "读一下 test_eval.txt 的内容", "expect_tool": "read_file", "expect_kw": "hello"}
+{"input": "帮我把 test_eval.txt 里的 hello 改成 world", "expect_tool": "edit_file", "expect_kw": "world"}
+{"input": "用 grep 搜一下 main.py 里有没有 MAX_ROUNDS", "expect_tool": "grep", "expect_kw": "MAX_ROUNDS"}
+{"input": "用 glob 找一下根目录下的 jsonl 文件", "expect_tool": "glob", "expect_kw": "sessions"}
+{"input": "帮我查一下北京今天的天气", "expect_tool": "web_search", "expect_kw": "北京"}
+{"input": "读一下 https://example.com 的网页内容", "expect_tool": "web_fetch", "expect_kw": "Example"}
+{"input": "列出你当前能用的工具名字", "expect_tool": "none", "expect_kw": "bash"}
+{"input": "你叫什么名字？直接回答", "expect_tool": "none", "expect_kw": "DeepSeek"}
+{"input": "读一下 main.py 的前 10 行", "expect_tool": "read_file", "expect_kw": "import"}
+{"input": "安排一个 10 秒后的定时唤醒，提醒我喝水", "expect_tool": "schedule_wakeup", "expect_kw": "安排"}
+{"input": "帮我立一个 goal：数数，每轮加 1", "expect_tool": "create_goal", "expect_kw": "goal"}
+{"input": "看看当前 goal 的状态", "expect_tool": "get_goal", "expect_kw": "active"}
+{"input": "执行一条 dir 命令", "expect_tool": "bash", "expect_kw": "目录"}
+{"input": "帮我算一下 1+1 等于几，直接回答", "expect_tool": "none", "expect_kw": "2"}
+{"input": "把 main.py 的类名搜出来", "expect_tool": "grep", "expect_kw": "class"}
+{"input": "去读一下 note.txt，告诉我里面写了什么", "expect_tool": "read_file", "expect_kw": "note"}
+{"input": "把 main.py 里所有的 import 替换成空行（不用真的改，告诉我你会用啥工具即可）", "expect_tool": "edit_file", "expect_kw": "edit"}
+{"input": "用浏览器打开 https://example.com", "expect_tool": "browser", "expect_kw": "Example"}

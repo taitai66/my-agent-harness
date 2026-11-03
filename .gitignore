@@ -1,0 +1,11 @@
+﻿__pycache__/
+*.pyc
+.env
+key.txt
+.rag.db
+.sessions/
+.trash/
+.screenshots/
+rg.exe
+archive/
+baseline/
