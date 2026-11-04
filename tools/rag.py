@@ -9,8 +9,20 @@ from config import WORK_DIR
 
 DB_PATH = os.path.join(WORK_DIR, ".rag.db")
 
+# 延迟加载模型，防止启动时太慢
+_model = None
+
+def get_embedding_model():
+    global _model
+    if _model is None:
+        from sentence_transformers import SentenceTransformer
+        print("[RAG] 正在加载 BGE 语义向量模型...")
+        # 使用在中文语义匹配上表现极好的轻量级模型
+        _model = SentenceTransformer('BAAI/bge-small-zh-v1.5')
+        print("[RAG] 模型加载完成。")
+    return _model
+
 def chunk_text(text, size=300, overlap=50):
-    """把长文本切块"""
     chunks = []
     start = 0
     while start < len(text):
@@ -20,16 +32,14 @@ def chunk_text(text, size=300, overlap=50):
     return chunks
 
 def extract_words(text):
-    """提取中文字符和英文单词，用于关键词匹配"""
     return re.findall(r'[\u4e00-\u9fa5]|[a-zA-Z]+', text.lower())
 
 def get_vector(text):
-    """极简向量化：提取词，做 256 维哈希映射（模拟 Dense Embedding）"""
-    vec = [0.0] * 256
-    words = extract_words(text)
-    for w in words:
-        idx = hash(w) % 256
-        vec[idx] += 1.0
+    """真实语义向量化：使用 BGE 模型提取特征"""
+    model = get_embedding_model()
+    # encode 会返回 numpy array，转为 list 以便存入 SQLite
+    vec = model.encode(text).tolist()
+    # 归一化向量，这样后续直接算点积就等于余弦相似度
     norm = math.sqrt(sum(v * v for v in vec))
     if norm > 0:
         vec = [v / norm for v in vec]
@@ -37,9 +47,8 @@ def get_vector(text):
 
 class RagStore:
     def __init__(self):
-        # check_same_thread=False 允许跨线程使用连接
         self.conn = sqlite3.connect(DB_PATH, check_same_thread=False)
-        self.lock = threading.Lock()  # 新增一把锁，防止并发读写冲突
+        self.lock = threading.Lock()
         self.conn.execute("""
             CREATE TABLE IF NOT EXISTS chunks (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -63,13 +72,12 @@ class RagStore:
         return len(chunks)
 
     def search(self, query, top_k=3):
-        """混合检索：向量相似度（语义） + 关键词命中率（精确匹配）"""
         query_vec = get_vector(query)
         query_words = set(extract_words(query))
         
         with self.lock:
             cursor = self.conn.execute("SELECT source, text, vector FROM chunks")
-            rows = cursor.fetchall()  # 一次性取出来，释放游标，防止后续操作锁库
+            rows = cursor.fetchall()
         
         results = []
         for row in rows:
@@ -86,17 +94,15 @@ class RagStore:
             else:
                 keyword_score = 0.0
                 
-            # 3. 加权融合（各占 50%）
+            # 3. 加权融合（这里依然是各占 50%）
             final_score = 0.5 * vector_score + 0.5 * keyword_score
             
-            if final_score > 0.1:  # 过滤掉完全不相关的
+            if final_score > 0.1:
                 results.append((final_score, source, text))
         
-        # 排序并返回 Top K
         results.sort(key=lambda x: x[0], reverse=True)
         return results[:top_k]
 
-# 全局唯一的数据库实例
 THE_RAG = RagStore()
 
 class RagSearchTool:
